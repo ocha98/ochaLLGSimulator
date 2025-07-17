@@ -16,22 +16,29 @@ NANO = 1e-9
 def precession_torque(m, h_eff):
     return -GAMMA_E * np.cross(m, h_eff)
 
+# h_eff [T]
+def damping_torque(m, h_eff, alpha):
+    return -alpha*GAMMA_E * np.cross(m, np.cross(m, h_eff))
+
 # hext: 外部磁場 [T]
-def llg(m, t, hext):
+def llg(m, t, hext, alpha):
     total_heff = hext
-    dm_dt = precession_torque(m, total_heff)
-    return dm_dt
+
+    dm_dt = precession_torque(m, total_heff) + damping_torque(m, total_heff, alpha)
+
+    return 1 / (1 + alpha*alpha) * dm_dt
 
 def main():
     t_list = np.linspace(0, 0.5e-9, 10000) # 計算する時間 0 ~ 10 ns
     
     # params
     hext = np.array([0, 0, 1]) # T
+    alpha = 0.05
 
     theta = radians(45)
     phi = radians(0)
     m_init = np.array([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]) # 初期磁化
-    m_list = odeint(llg, m_init, t_list, args = (hext, )) # 数値計算実行！
+    m_list = odeint(llg, m_init, t_list, args = (hext, alpha)) # 数値計算実行！
     # == 計算結果をプロット == 
     mx = m_list[:, 0]
     my = m_list[:, 1]
