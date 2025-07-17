@@ -1,5 +1,5 @@
 import numpy as np
-from scipy.integrate import odeint
+from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
 from math import sin, cos, radians
 
@@ -21,7 +21,7 @@ def damping_torque(m, h_eff, alpha):
     return -alpha*GAMMA_E * np.cross(m, np.cross(m, h_eff))
 
 # hext: 外部磁場 [T]
-def llg(m, t, hext, alpha):
+def llg(t, m, hext, alpha):
     total_heff = hext
 
     dm_dt = precession_torque(m, total_heff) + damping_torque(m, total_heff, alpha)
@@ -38,11 +38,12 @@ def main():
     theta = radians(45)
     phi = radians(0)
     m_init = np.array([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]) # 初期磁化
-    m_list = odeint(llg, m_init, t_list, args = (hext, alpha)) # 数値計算実行！
+    result = solve_ivp(llg, (t_list[0], t_list[-1]), m_init, t_eval = t_list, args = (hext, alpha)) # 数値計算実行！
+
     # == 計算結果をプロット == 
-    mx = m_list[:, 0]
-    my = m_list[:, 1]
-    mz = m_list[:, 2]
+    mx = result.y[0]
+    my = result.y[1]
+    mz = result.y[2]
 
     fig = plt.figure()
     # 3D軌道をプロット
