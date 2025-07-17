@@ -1,0 +1,93 @@
+import numpy as np
+from scipy.integrate import odeint
+import matplotlib.pyplot as plt
+from math import sin, cos, radians
+
+# physical constants
+# reference: https://physics.nist.gov/cgi-bin/cuu/Value?gammae (2025/07/17)
+GAMMA_E =  1.760_859_627_84e11 # gyromagnetic ratio of electron [s^-1 T^-1] s
+# # reference: https://physics.nist.gov/cgi-bin/cuu/Value?mu0 (2025/07/17)
+MU_0 = 1.256_637_016_27e-6 # vacuum magnetic permeability [N/A^2]
+
+# SI constants
+NANO = 1e-9
+
+# h_eff [T]
+def precession_torque(m, h_eff):
+    return -GAMMA_E * np.cross(m, h_eff)
+
+# hext: 外部磁場 [T]
+def llg(m, t, hext):
+    total_heff = hext
+    dm_dt = precession_torque(m, total_heff)
+    return dm_dt
+
+def main():
+    t_list = np.linspace(0, 0.5e-9, 10000) # 計算する時間 0 ~ 10 ns
+    
+    # params
+    hext = np.array([0, 0, 1]) # T
+
+    theta = radians(45)
+    phi = radians(0)
+    m_init = np.array([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]) # 初期磁化
+    m_list = odeint(llg, m_init, t_list, args = (hext, )) # 数値計算実行！
+    # == 計算結果をプロット == 
+    mx = m_list[:, 0]
+    my = m_list[:, 1]
+    mz = m_list[:, 2]
+
+    fig = plt.figure()
+    # 3D軌道をプロット
+    ax1 = fig.add_subplot(122, projection = '3d')
+    ax1.plot(mx, my, mz, marker = '')
+    ax1.set_xlabel(r'$m_x$')
+    ax1.set_ylabel(r'$m_y$')
+    ax1.set_zlabel(r'$m_z$')
+    ax1.set_xlim(-1, 1)
+    ax1.set_ylim(-1, 1)
+    ax1.set_zlim(-1, 1)
+    ax1.set_title('Simulation result')
+
+    # 補助線を描画
+    for theta in np.linspace(0, np.pi, 5):
+        r = np.sin(theta)
+        lin = np.linspace(0, 2*np.pi, 100)
+        ax1.plot(r*np.cos(lin), r*np.sin(lin), np.cos(theta), color = 'gray', marker = '', linewidth = 0.5)
+    for theta in np.linspace(0, np.pi, 5):
+        lin = np.linspace(0, 2*np.pi, 100)
+        ax1.plot(np.cos(theta)*np.sin(lin), np.sin(theta)*np.sin(lin), np.cos(lin), color = 'gray', marker = '', linewidth = 0.5)
+
+    ax1.text(mx[0], my[0], mz[0], 'Initial', ha = 'right', va = 'bottom')
+    ax1.plot(mx[0], my[0], mz[0], marker = 'o', color = 'red')
+    ax1.text(mx[len(mx)-1], my[len(my)-1], mz[len(mz)-1], 'Final', ha = 'left', va = 'bottom')
+    ax1.plot(mx[len(mx)-1], my[len(my)-1], mz[len(mz)-1], marker = 'o', color = 'red')
+    ax1.minorticks_on()
+
+    # mx, my, mzをプロット
+    ax2 = fig.add_subplot(321)
+    ax2.plot(t_list/NANO, mx)
+    ax2.set_ylabel('mx')
+    ax2.set_ylim(-1.1, 1.1)
+    ax2.minorticks_on()
+
+    ax3 = fig.add_subplot(323)
+    ax3.plot(t_list/NANO, my)
+    ax3.set_ylabel('my')
+    ax3.set_ylim(-1.1, 1.1)
+    ax3.minorticks_on()
+
+    ax4 = fig.add_subplot(325)
+    ax4.plot(t_list/NANO, mz)
+    ax4.set_ylabel('mz')
+    ax4.set_xlabel('t (ns)')
+    ax4.set_ylim(-1.1, 1.1)
+    ax4.minorticks_on()
+
+
+    fig.tight_layout()
+    fig.savefig('simulation_result.jpg', dpi = 200)
+    plt.close(fig)
+
+if __name__ == '__main__':
+    main()
