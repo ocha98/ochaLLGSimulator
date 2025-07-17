@@ -20,25 +20,32 @@ def precession_torque(m, h_eff):
 def damping_torque(m, h_eff, alpha):
     return -alpha*GAMMA_E * np.cross(m, np.cross(m, h_eff))
 
+# ku[J/m^3], ms[J/m^3]
+def anisotropy_field(m, ku, ms, u_axis):
+    return 2 * ku / ms * np.dot(m, u_axis) * u_axis
+
 # hext: 外部磁場 [T]
-def llg(t, m, hext, alpha):
-    total_heff = hext
+def llg(t, m, hext, alpha, ku, ms, u_axis):
+    total_heff = hext + anisotropy_field(m, ku, ms, u_axis)
 
     dm_dt = precession_torque(m, total_heff) + damping_torque(m, total_heff, alpha)
 
     return 1 / (1 + alpha*alpha) * dm_dt
 
 def main():
-    t_list = np.linspace(0, 0.5e-9, 10000) # 計算する時間 0 ~ 10 ns
+    t_list = np.linspace(0, 0.2e-9, 1000) # 計算する時間 0 ~ 10 ns
     
     # params
-    hext = np.array([0, 0, 1]) # T
+    hext = np.array([0, 0, 0]) # T
     alpha = 0.05
+    ku = 1e6
+    ms = 1e6
+    u_axis = np.array([0, 0, 1])
 
     theta = radians(45)
     phi = radians(0)
     m_init = np.array([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]) # 初期磁化
-    result = solve_ivp(llg, (t_list[0], t_list[-1]), m_init, t_eval = t_list, args = (hext, alpha)) # 数値計算実行！
+    result = solve_ivp(llg, (t_list[0], t_list[-1]), m_init, t_eval = t_list, args = (hext, alpha, ku, ms, u_axis)) # 数値計算実行！
 
     # == 計算結果をプロット == 
     mx = result.y[0]
