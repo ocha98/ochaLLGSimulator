@@ -29,7 +29,7 @@ def sot(m, theta_sh, ms, tf, jc, alpha, sigma):
     coeff = GAMMA_E*H_BAR*theta_sh / (2*E*ms*tf) * jc
     return coeff * (np.cross(m, np.cross(sigma, m)) - alpha*np.cross(sigma, m))
 
-# ku[J/m^3], ms[J/m^3]
+# ku[J/m^3], ms[A/m]
 def anisotropy_field(m, ku, ms, u_axis):
     return 2 * ku / ms * np.dot(m, u_axis) * u_axis
 
@@ -47,8 +47,8 @@ def main():
     # params
     hext = np.array([0, 0, 0]) # T
     alpha = 0.05
-    ku = 1e6
-    ms = 1e6
+    ku = 1e6 # [J/m^3]
+    ms = 1e6 # [A/m]
     u_axis = np.array([0, 0, 1])
     theta_sh = 0.07
     tf = 1e-9
@@ -66,17 +66,40 @@ def main():
     my = result.y[1]
     mz = result.y[2]
 
-    fig = plt.figure()
+    fig = plt.figure(layout = 'constrained')
+    fig.suptitle('Simulation Result', fontsize = 16)
     # 3D軌道をプロット
     ax1 = fig.add_subplot(122, projection = '3d')
+    
+    # xyzの単位ベクトルを描画
+    ax1.quiver(0, 0, 0, 1, 0, 0, color = 'k', linestyle = '--', linewidth = 0.5) # x arrow
+    ax1.quiver(0, 0, 0, 0, 1, 0, color = 'k', linestyle = '--', linewidth = 0.5) # y arrow
+    ax1.quiver(0, 0, 0, 0, 0, 1, color = 'k', linestyle = '--', linewidth = 0.5) # z arrow
+    ax1.text(1.2, 0, 0, 'x', ha = 'left')
+    ax1.text(0, 1.5, 0, 'y', ha = 'left')
+    ax1.text(0, 0, 1.5, 'z', ha = 'left')
+
+    # 軌道をプロット
     ax1.plot(mx, my, mz, marker = '')
-    ax1.set_xlabel(r'$m_x$')
-    ax1.set_ylabel(r'$m_y$')
-    ax1.set_zlabel(r'$m_z$')
+    
     ax1.set_xlim(-1, 1)
     ax1.set_ylim(-1, 1)
     ax1.set_zlim(-1, 1)
-    ax1.set_title('Simulation result')
+
+    # 枠線などを消す
+    ax1.grid(False)
+    ax1.xaxis.pane.fill = False
+    ax1.yaxis.pane.fill = False
+    ax1.zaxis.pane.fill = False
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    ax1.set_zticks([])
+    ax1.xaxis.line.set_color('none')
+    ax1.yaxis.line.set_color('none')
+    ax1.zaxis.line.set_color('none')
+    ax1.xaxis.pane.set_edgecolor('none')
+    ax1.yaxis.pane.set_edgecolor('none')
+    ax1.zaxis.pane.set_edgecolor('none')
 
     # 補助線を描画
     for theta in np.linspace(0, np.pi, 5):
@@ -91,7 +114,6 @@ def main():
     ax1.plot(mx[0], my[0], mz[0], marker = 'o', color = 'red')
     ax1.text(mx[len(mx)-1], my[len(my)-1], mz[len(mz)-1], 'Final', ha = 'left', va = 'bottom')
     ax1.plot(mx[len(mx)-1], my[len(my)-1], mz[len(mz)-1], marker = 'o', color = 'red')
-    ax1.minorticks_on()
 
     # mx, my, mzをプロット
     ax2 = fig.add_subplot(321)
@@ -113,8 +135,6 @@ def main():
     ax4.set_ylim(-1.1, 1.1)
     ax4.minorticks_on()
 
-
-    fig.tight_layout()
     fig.savefig('simulation_result.jpg', dpi = 200)
     plt.close(fig)
 
