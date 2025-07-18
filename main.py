@@ -26,7 +26,7 @@ def damping_torque(m, h_eff, alpha):
 
 # ms [A/m] tf[m] jc [A/m^2]
 def sot(m, theta_sh, ms, tf, jc, alpha, sigma):
-    coeff = GAMMA_E*H_BAR*theta_sh/(2*E*ms*tf)*jc
+    coeff = GAMMA_E*H_BAR*theta_sh / (2*E*ms*tf) * jc
     return coeff * (np.cross(m, np.cross(sigma, m)) - alpha*np.cross(sigma, m))
 
 # ku[J/m^3], ms[J/m^3]
@@ -34,15 +34,15 @@ def anisotropy_field(m, ku, ms, u_axis):
     return 2 * ku / ms * np.dot(m, u_axis) * u_axis
 
 # hext: 外部磁場 [T]
-def llg(t, m, hext, alpha, ku, ms, u_axis):
+def llg(t, m, hext, alpha, ku, ms, u_axis, theta_sh, tf, jc, sigma):
     total_heff = hext + anisotropy_field(m, ku, ms, u_axis)
 
-    dm_dt = precession_torque(m, total_heff) + damping_torque(m, total_heff, alpha)
+    dm_dt = precession_torque(m, total_heff) + damping_torque(m, total_heff, alpha) + sot(m, theta_sh, ms, tf, jc, alpha, sigma)
 
     return 1 / (1 + alpha*alpha) * dm_dt
 
 def main():
-    t_list = np.linspace(0, 0.2e-9, 1000) # 計算する時間 0 ~ 10 ns
+    t_list = np.linspace(0, 1.5e-9, 1000) # 計算する時間 0 ~ 10 ns
     
     # params
     hext = np.array([0, 0, 0]) # T
@@ -50,11 +50,16 @@ def main():
     ku = 1e6
     ms = 1e6
     u_axis = np.array([0, 0, 1])
+    theta_sh = 0.07
+    tf = 1e-9
+    jc = 0.5e13
+ 
+    sigma = np.array([0, 0, -1])
 
-    theta = radians(45)
+    theta = radians(1)
     phi = radians(0)
     m_init = np.array([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]) # 初期磁化
-    result = solve_ivp(llg, (t_list[0], t_list[-1]), m_init, t_eval = t_list, args = (hext, alpha, ku, ms, u_axis)) # 数値計算実行！
+    result = solve_ivp(llg, (t_list[0], t_list[-1]), m_init, t_eval = t_list, args = (hext, alpha, ku, ms, u_axis, theta_sh, tf, jc, sigma)) # 数値計算実行！
 
     # == 計算結果をプロット == 
     mx = result.y[0]
