@@ -20,7 +20,7 @@ def precession_torque(m, h_eff):
 def damping_torque(m, h_eff, alpha):
     return -alpha*GAMMA_E * np.cross(m, np.cross(m, h_eff))
 
-# ku[J/m^3], ms[J/m^3]
+# ku[J/m^3], ms[A/m]
 def anisotropy_field(m, ku, ms, u_axis):
     return 2 * ku / ms * np.dot(m, u_axis) * u_axis
 
@@ -38,8 +38,8 @@ def main():
     # params
     hext = np.array([0, 0, 0]) # T
     alpha = 0.05
-    ku = 1e6
-    ms = 1e6
+    ku = 1e6 # [J/m^3]
+    ms = 1e6 # [A/m]
     u_axis = np.array([0, 0, 1])
 
     theta = radians(45)
