@@ -5,9 +5,13 @@ from math import sin, cos, radians
 
 # physical constants
 # reference: https://physics.nist.gov/cgi-bin/cuu/Value?gammae (2025/07/17)
-GAMMA_E =  1.760_859_627_84e11 # gyromagnetic ratio of electron [s^-1 T^-1] s
+GAMMA_E =  1.760_859_627_84e11 # gyromagnetic ratio of electron [s^-1 T^-1]
 # # reference: https://physics.nist.gov/cgi-bin/cuu/Value?mu0 (2025/07/17)
 MU_0 = 1.256_637_016_27e-6 # vacuum magnetic permeability [N/A^2]
+# reference: https://physics.nist.gov/cgi-bin/cuu/Value?hbar (2025/07/18)
+H_BAR = 1.054_571_817e-34 # reduced Planck constant [Js]
+# reference: https://physics.nist.gov/cgi-bin/cuu/Value?e (2025/07/18)
+E = 1.602_176_634e-19 # elementary charge [C]
 
 # SI constants
 NANO = 1e-9
@@ -19,6 +23,10 @@ def precession_torque(m, h_eff):
 # h_eff [T]
 def damping_torque(m, h_eff, alpha):
     return -alpha*GAMMA_E * np.cross(m, np.cross(m, h_eff))
+
+def sot(m, theta_sh, ms, tf, jc, alpha, sigma):
+    coeff = GAMMA_E*MU_0*theta_sh/(2*E*ms*tf)*jc
+    return coeff * (np.cross(m, np.cross(sigma, m)) - alpha*np.cross(sigma, m))
 
 # ku[J/m^3], ms[J/m^3]
 def anisotropy_field(m, ku, ms, u_axis):
