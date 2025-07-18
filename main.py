@@ -24,8 +24,9 @@ def precession_torque(m, h_eff):
 def damping_torque(m, h_eff, alpha):
     return -alpha*GAMMA_E * np.cross(m, np.cross(m, h_eff))
 
+# ms [A/m] tf[m] jc [A/m^2]
 def sot(m, theta_sh, ms, tf, jc, alpha, sigma):
-    coeff = GAMMA_E*MU_0*theta_sh/(2*E*ms*tf)*jc
+    coeff = GAMMA_E*H_BAR*theta_sh/(2*E*ms*tf)*jc
     return coeff * (np.cross(m, np.cross(sigma, m)) - alpha*np.cross(sigma, m))
 
 # ku[J/m^3], ms[J/m^3]
