@@ -1,6 +1,7 @@
 import numpy as np
 from scipy.integrate import solve_ivp
 import matplotlib.pyplot as plt
+import pandas as pd
 from math import sin, cos, radians
 
 # physical constants
@@ -35,15 +36,14 @@ def anisotropy_field(m, ku, ms, u_axis):
 
 # hext: 外部磁場 [T]
 def llg(t, m, hext, alpha, ku, ms, u_axis, theta_sh, tf, jc, sigma):
+    jc = jc(t)
     total_heff = hext + anisotropy_field(m, ku, ms, u_axis)
 
     dm_dt = precession_torque(m, total_heff) + damping_torque(m, total_heff, alpha) + sot(m, theta_sh, ms, tf, jc, alpha, sigma)
 
     return 1 / (1 + alpha*alpha) * dm_dt
 
-def main():
-    t_list = np.linspace(0, 1.5e-9, 1000) # 計算する時間 0 ~ 10 ns
-    
+def simulator(run_time, dt = None) -> pd.DataFrame:
     # params
     hext = np.array([0, 0, 0]) # T
     alpha = 0.05
@@ -52,20 +52,42 @@ def main():
     u_axis = np.array([0, 0, 1])
     theta_sh = 0.07
     tf = 1e-9
-    jc = 0.5e13
+    jc = lambda t: 1e12 # [A/m^2] (constant current density)
  
     sigma = np.array([0, 0, -1])
 
     theta = radians(1)
     phi = radians(0)
     m_init = np.array([sin(theta)*cos(phi), sin(theta)*sin(phi), cos(theta)]) # 初期磁化
-    result = solve_ivp(llg, (t_list[0], t_list[-1]), m_init, t_eval = t_list, args = (hext, alpha, ku, ms, u_axis, theta_sh, tf, jc, sigma)) # 数値計算実行！
+
+    t_list = None
+    if dt is not None:
+        t_list = np.arange(0, run_time, run_time/dt)
+
+    result = solve_ivp(llg, (0, run_time), m_init, t_eval = t_list, args = (hext, alpha, ku, ms, u_axis, theta_sh, tf, jc, sigma)) # 数値計算実行！
 
     # == 計算結果をプロット == 
+    t_list = result.t
     mx = result.y[0]
     my = result.y[1]
     mz = result.y[2]
 
+    df = pd.DataFrame()
+    df['t'] = t_list
+    df['mx'] = mx
+    df['my'] = my
+    df['mz'] = mz
+    df['jc'] = list(map(jc, t_list))
+
+    return df
+
+def plot_result(df: pd.DataFrame):
+    t_list = df['t'].values
+    mx = df['mx'].values
+    my = df['my'].values
+    mz = df['mz'].values
+    jc = df['jc'].values
+    
     fig = plt.figure(layout = 'constrained')
     fig.suptitle('Simulation Result', fontsize = 16)
     # 3D軌道をプロット
@@ -116,19 +138,24 @@ def main():
     ax1.plot(mx[len(mx)-1], my[len(my)-1], mz[len(mz)-1], marker = 'o', color = 'red')
 
     # mx, my, mzをプロット
-    ax2 = fig.add_subplot(321)
+    ax = fig.add_subplot(421)
+    ax.plot(t_list/NANO, jc)
+    ax.set_ylabel('jc (A/m^2)')
+    ax.minorticks_on()
+
+    ax2 = fig.add_subplot(423)
     ax2.plot(t_list/NANO, mx)
     ax2.set_ylabel('mx')
     ax2.set_ylim(-1.1, 1.1)
     ax2.minorticks_on()
 
-    ax3 = fig.add_subplot(323)
+    ax3 = fig.add_subplot(425)
     ax3.plot(t_list/NANO, my)
     ax3.set_ylabel('my')
     ax3.set_ylim(-1.1, 1.1)
     ax3.minorticks_on()
 
-    ax4 = fig.add_subplot(325)
+    ax4 = fig.add_subplot(427)
     ax4.plot(t_list/NANO, mz)
     ax4.set_ylabel('mz')
     ax4.set_xlabel('t (ns)')
@@ -137,6 +164,14 @@ def main():
 
     fig.savefig('simulation_result.jpg', dpi = 200)
     plt.close(fig)
+
+def main():
+    run_time = 1.5e-9  # 1.5 ns
+    dt = 1000  # 時間刻み数
+
+    df = simulator(run_time, dt)
+
+    plot_result(df)
 
 if __name__ == '__main__':
     main()
